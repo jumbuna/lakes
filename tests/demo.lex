@@ -10,7 +10,7 @@
 		tokid,
 	};
 %}
-
+@ digit macro
 D [0-9]
 
 %%
