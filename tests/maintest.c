@@ -1,5 +1,7 @@
 #include "../include/dfa.h"
+#define MAIN
 #include "../include/globals.h"
+#undef MAIN
 #include "../include/macro.h"
 #include <assert.h>
 extern int pre_expr(), print_yynext(), print_header(), print_templatepart(), print_dfa(), print_accepts();

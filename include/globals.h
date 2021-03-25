@@ -29,4 +29,5 @@ ALLOC int Lexeme;
 ALLOC char *Ifilename;
 ALLOC char *Ofilename I(="lex.yy.c");
 ALLOC char *Tname I(="lex.parts.c");
+ALLOC char *(*input_fun)();
 

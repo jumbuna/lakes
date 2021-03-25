@@ -1,12 +1,10 @@
 #include <stdio.h>
-#include "include/debug.h"
-#include "include/dfa.h"
+#include "../include/debug.h"
+#include "../include/dfa.h"
 #include <ctype.h>
 #include "../include/macro.h"
-#define MAIN
-#include "include/globals.h"
-#undef MAIN
-#include "project_config.h"
+#include "../include/globals.h"
+#include "../project_config.h"
 
 #define TABSTOP	4
 

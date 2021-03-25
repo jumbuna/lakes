@@ -52,7 +52,6 @@ int macro_get(char **macroname, char **macrotext) {
 	if(!(temp = strchr(++*macroname, '}'))) return M_CURLY_MISS;
 	*temp++ = '\0';
 	struct macro *t = mapfindentry(macromap, *macroname);
-	D(printf("t = %s\n", *macroname);)
 	if(!t) return M_MACRO_MISS;
 	*macrotext = t->text;
 	*macroname = temp;
