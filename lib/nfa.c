@@ -198,7 +198,8 @@ PRIVATE struct nfa *machine() {
     ENTER("machine");
     // start state
     struct nfa *start, *p;
-    p = start = rule();
+    p = start = new_nfa();
+    p->next = rule();
     while(!match(EOI)) {
         p->next2 = new_nfa();
         p = p->next2;
@@ -264,6 +265,7 @@ PRIVATE void concat(struct nfa **startp, struct nfa **endp) {
         struct nfa *startp2, *endp2;
         factor(&startp2, &endp2);
         memcpy(*endp, startp2, sizeof(struct nfa));
+        (*endp) = endp2;
         free_nfa(startp2);
     }
     LEAVE("concat");
@@ -413,7 +415,7 @@ PRIVATE void print_ccl(struct set *s) {
     printf("[");
     for(int i = 0; i < 128; i++) {
         if(settest(s, i)) {
-            i >= ' ' ? printf("%c", i) : printf("^@%c", i+' ');
+            i >= ' ' ? printf("%c", i) : printf("^%c", i+'@');
         }
     }
     printf("]");
