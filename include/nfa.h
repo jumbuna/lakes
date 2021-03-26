@@ -39,3 +39,7 @@ enum nerror {
     N_OPENCCL, // missing `]` 
     N_NOMACRO,
 };
+
+extern char *nerror2str[];
+
+void print_nerror();

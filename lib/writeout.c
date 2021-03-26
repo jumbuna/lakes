@@ -55,6 +55,7 @@ int pre_expr() {
 			fputc('\n', Ofile);
 		}
 	}
+	Actuallineno = Lineno;
 	return !feof(Ifile);
 }
 

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <assert.h>
 
 #define MAXNFA 1024
 #define MAXACCEPT 2048 * 10
@@ -79,6 +81,11 @@ PRIVATE enum token current_token;
 PRIVATE struct nfa *nstack[32];
 PRIVATE struct nfa **nstack_p = &nstack[32];
 
+char *mstack[32];
+char **mstack_p = &mstack[32];
+
+char *pre_macro;
+
 PRIVATE struct nfa *nfas;
 PRIVATE int next_alloc;
 PRIVATE int nfa_size;
@@ -109,10 +116,12 @@ PRIVATE enum token advance() {
     while(*expression == '\0') {
         if(istack_p >= &istack[32]) {
             current_token = EOS;
+            pre_macro = NULL;
             goto exit;
         }
         expression = *istack_p;
         istack_p++;
+        ++mstack_p;
     }
     if(*expression == '"') {
         in_quote = ~in_quote;
@@ -124,12 +133,16 @@ PRIVATE enum token advance() {
     }
     if(!in_quote) {
         while(*expression == '{') {
+            if(!pre_macro) {
+                pre_macro = expression;
+            }
             //push
             if(--istack_p >= &istack[32]) {
                 // TODO
                 ERROR(N_NESTTOODEEP);
                 RETURN_ON_ERROR_WITH_VALUE(-1);
             }
+            *--mstack_p = expression+1;
             *--istack_p = expression;
             if(macro_get(istack_p, &expression) != M_OK) {
                 //TODO error handle
@@ -497,3 +510,54 @@ int thompson_construction(struct nfa **nfa, struct nfa **start, int *size, char 
     return last_error;
 }
 
+char *nerror2str[] = {
+    "OK",
+    "Too many nfas",
+    "Expression missing closing parenthesis `)`",
+    "Macro nesting too deep. Max nesting 32",
+    "No memory for nfas",
+    "No memory for accept action strings",
+    "Expression Too complex",
+    "Closure not bound to any expression",
+    "`^` not allowed here",
+    "No opening `[` to match this `]`",
+    "No closing `[`",
+    "Macro not found"
+};
+
+void print_nerror() {
+    if(last_error == N_OK) return;
+    char *temp;
+    char *to_use = pre_macro ? pre_macro : expression;
+    fprintf(stderr, "%s%s:%d:%d: error: %s\n", temp = getcwd(0,0), Ifilename, Lineno, (int) (to_use-start_expression), nerror2str[last_error]);
+    free(temp);
+    fprintf(stderr, "%s\n", start_expression);
+    temp = start_expression;
+    while(temp < to_use) {
+        putc('~', stderr);
+        temp++;
+    }
+    putc('^', stderr);
+    putc('\n', stderr);
+    if(mstack_p < &mstack[32]) {
+        char **tempp = mstack_p;
+        if(last_error == N_NOMACRO) {
+            temp = strchr(*tempp, '}');
+            assert(temp);
+            *temp = 0;
+            fputs("\nMacroname: ", stderr);
+            fputs(*tempp, stderr);
+            fputs("\n\n", stderr);
+            ++tempp;
+        }
+        fputs("Macro backtrace:\n", stderr);
+        while(tempp != &mstack[32]) {
+            temp = strchr(*tempp, '}');
+            *temp = 0;
+            fputs(*tempp, stderr);
+            fputc('\n', stderr);
+            tempp++;
+        }
+    }
+    fflush(stderr);
+}

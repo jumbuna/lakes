@@ -11,10 +11,10 @@
 	};
 %}
 @ digit macro
-D [0-9]
+D [0-9]{goat}
 
 %%
-{D*\.{D}+|{D}+\.{D}*	return tokdouble;
+{D}*?\.{D}+|{D}+\.{D}*	return tokdouble;
 {D}+	return tokint;
 (({D}*\.{D}+)|({D}+\.{D}*))[eE]{D}*		return tokfloat;
 '[^\\']'	return tokchar;

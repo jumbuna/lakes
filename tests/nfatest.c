@@ -8,14 +8,12 @@ extern int pre_expr();
 extern char *get_expr();
 
 int main(int argc, char **argv) {
-    Ifile = fopen(argv[1], "r");
+    Ifile = fopen(Ifilename = argv[1], "r");
     Ofile = stdout;
     pre_expr();
     struct nfa *start, *arr;
     int size;
     int ret = thompson_construction(&arr, &start, &size, get_expr);
-    if(ret != N_OK) {
-        printf("An error occured: code %d\n", ret);
-    }
+    print_nerror();
     return ret;
 }
