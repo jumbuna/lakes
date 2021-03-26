@@ -8,29 +8,39 @@ add_executable(testmacro tests/macrotest.c lib/macro.c include/macro.h)
 add_executable(testmain tests/maintest.c lib/macro.c include/macro.h lib/writeout.c)
 add_executable(tkgen lib/tokmap_generator.c)
 add_executable(testnfa lib/nfa.c lib/writeout.c lib/input.c tests/nfatest.c lib/macro.c)
+add_executable(testinterpreter tests/interpretertest.c lib/macro.c lib/nfa.c lib/nfa_interpreter.c)
 
 #tests
 enable_testing()
 add_test(NAME macrotest COMMAND testmacro)
 add_test(NAME maintest COMMAND testmain)
-add_test(NAME nfatest COMMAND testnfa)
+add_test(NAME nfatest COMMAND testnfa "${CMAKE_SOURCE_DIR}/tests/demo.lex")
+#add_test(NAME nfafailtest COMMAND testnfa "${CMAKE_SOURCE_DIR}/tests/demo2.lex")
+add_test(NAME interpretertest COMMAND testinterpreter)
+
+#test properties
+#set_tests_properties(nfafailtest PROPERTIES WILL_FAIL TRUE)
 
 #libraries dir
 target_link_directories(testmacro PUBLIC "${CMAKE_INSTALL_PREFIX}/lib")
 target_link_directories(testmain PUBLIC "${CMAKE_INSTALL_PREFIX}/lib")
 target_link_directories(testnfa PUBLIC "${CMAKE_INSTALL_PREFIX}/lib")
+target_link_directories(testinterpreter PUBLIC "${CMAKE_INSTALL_PREFIX}/lib")
 
 #libraries
 target_link_libraries(testmacro PUBLIC map)
 target_link_libraries(testmain PUBLIC map)
 target_link_libraries(testnfa PUBLIC map set esc)
+target_link_libraries(testinterpreter PUBLIC map set esc)
 
 #include dirs
 target_include_directories(testmacro PUBLIC include "${CMAKE_INSTALL_PREFIX}/include")
 target_include_directories(testmain PUBLIC include "${CMAKE_INSTALL_PREFIX}/include")
 target_include_directories(testnfa PUBLIC include "${CMAKE_INSTALL_PREFIX}/include")
+target_include_directories(testinterpreter PUBLIC include "${CMAKE_INSTALL_PREFIX}/include")
 
 #compile defs
 target_compile_definitions(testmacro PUBLIC DEBUG)
 target_compile_definitions(testmain PUBLIC DEBUG)
 target_compile_definitions(testnfa PUBLIC DEBUG)
+target_compile_definitions(testinterpreter PUBLIC DEBUG)

@@ -7,8 +7,6 @@
 #include <unistd.h>
 #include <assert.h>
 
-#define MAXNFA 1024
-#define MAXACCEPT 2048 * 10
 #define match(t) (t == current_token)
 
 #ifdef DEBUG
@@ -262,6 +260,7 @@ PRIVATE struct nfa *rule() {
         start = new_nfa();
         anchor |= START;
         RETURN_ON_ERROR_WITH_VALUE(NULL);
+        start->edge = '\n';
         expr(&start->next, &end);
     } else {
         expr(&start, &end);
@@ -270,6 +269,7 @@ PRIVATE struct nfa *rule() {
         RETURN_ON_ERROR_WITH_VALUE(NULL);
         end->next = new_nfa();
         RETURN_ON_ERROR_WITH_VALUE(NULL);
+        end->edge = '\n';
         end = end->next;
         advance();
         anchor |= END;
@@ -529,7 +529,7 @@ void print_nerror() {
     if(last_error == N_OK) return;
     char *temp;
     char *to_use = pre_macro ? pre_macro : expression;
-    fprintf(stderr, "%s%s:%d:%d: error: %s\n", temp = getcwd(0,0), Ifilename, Lineno, (int) (to_use-start_expression), nerror2str[last_error]);
+    fprintf(stderr, "%s%s:%d:%d: error: %s\n", Ifilename[0] == '/' ? "" : (temp = getcwd(0,0)), Ifilename, Lineno, (int) (to_use-start_expression), nerror2str[last_error]);
     free(temp);
     fprintf(stderr, "%s\n", start_expression);
     temp = start_expression;

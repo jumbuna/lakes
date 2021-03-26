@@ -3,6 +3,9 @@
 #include "/usr/local/include/set/set.h"
 #include "../include/globals.h"
 
+#define MAXNFA 1024
+#define MAXACCEPT 2048 * 10
+
 // EDGES
 #define EPSILON     -1
 #define CCL         -2
