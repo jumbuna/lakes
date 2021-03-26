@@ -23,7 +23,19 @@ struct nfa  {
     char *accept;
 };
 
-int thompson_construction(struct nfa **nfa, struct nfa **start, char *(*inputfun)());
+int thompson_construction(struct nfa **, struct nfa **, int *, char *(*)());
 
-
-
+enum nerror {
+    N_OK,   // ok
+    N_TOOMANYNFAS, // Too many nfas
+    N_MISSNGPAREN, // missing ')'
+    N_NESTTOODEEP, // Too many nested macros
+    N_NFASNOMEM,   // nfas == NULL
+    N_ACCEPTSNOMEM,   //accepts == NULL
+    N_COMPLEXEXPR, // complex expression
+    N_BADCLOSURE, // unbinded closure
+    N_BADBOL, // invalid `^`
+    N_NOCCL,    // unmatched `]`
+    N_OPENCCL, // missing `]` 
+    N_NOMACRO,
+};

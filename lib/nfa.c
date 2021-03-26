@@ -20,6 +20,19 @@ int level = 0;
 
 extern int esc();
 
+PRIVATE int last_error;
+
+#define ERROR(x) (last_error = x)
+
+#define NORETURN -2
+
+#define RETURN_ON_ERROR_WITH_VALUE(...)   \
+    if(last_error) return (__VA_ARGS__);\
+    else
+
+#define RETURN_ON_ERROR_VOID()  \
+    if(last_error) return;\
+    else
 
 enum token {
     LITERAL,
@@ -62,8 +75,6 @@ PRIVATE enum token token_map[128] = {
 };
 
 PRIVATE enum token current_token;
-PRIVATE char *expression, *start_expression;
-PRIVATE char lexeme;
 
 PRIVATE struct nfa *nstack[32];
 PRIVATE struct nfa **nstack_p = &nstack[32];
@@ -75,6 +86,8 @@ PRIVATE int nfa_size;
 PRIVATE int *accepts;
 
 PRIVATE enum token advance() {
+    RETURN_ON_ERROR_WITH_VALUE(-1);
+
     static int in_quote;
     static char *istack[32];
     static char **istack_p = &istack[32]; 
@@ -114,10 +127,14 @@ PRIVATE enum token advance() {
             //push
             if(--istack_p >= &istack[32]) {
                 // TODO
+                ERROR(N_NESTTOODEEP);
+                RETURN_ON_ERROR_WITH_VALUE(-1);
             }
             *--istack_p = expression;
             if(macro_get(istack_p, &expression) != M_OK) {
                 //TODO error handle
+                ERROR(N_NOMACRO);
+                RETURN_ON_ERROR_WITH_VALUE(-1);
             }
         }
     }
@@ -148,13 +165,18 @@ PRIVATE char *save_accept();
 
 
 PRIVATE struct nfa *new_nfa() {
+    RETURN_ON_ERROR_WITH_VALUE(NULL);
     if(nfas == NULL) {
         if((nfas = calloc(MAXNFA, sizeof(struct nfa))) == NULL) {
-            //TODO Error
+            // TODO Error
+            ERROR(N_NFASNOMEM);
+            RETURN_ON_ERROR_WITH_VALUE(NULL);
         }
     }
     if(++nfa_size > MAXNFA) {
         // TODO Error
+        ERROR(N_TOOMANYNFAS);
+        RETURN_ON_ERROR_WITH_VALUE(NULL);
     }
     struct nfa *toreturn = (nstack_p < &nstack[32]) ? *nstack_p++ : &nfas[next_alloc++];
     toreturn->edge = EPSILON;
@@ -162,19 +184,24 @@ PRIVATE struct nfa *new_nfa() {
 }
 
 PRIVATE void free_nfa(struct nfa *tofree) {
+    RETURN_ON_ERROR_VOID();
     memset(tofree, 0, sizeof(struct nfa));
     *--nstack_p = tofree;
     if(nstack_p < nstack) {
         //TODO Error
+        ERROR(N_COMPLEXEXPR);
+        RETURN_ON_ERROR_VOID();
     }
     tofree->edge = EMPTY;
 }
 
 PRIVATE char *save_accept(char *action) {
+    RETURN_ON_ERROR_WITH_VALUE(NULL);
     static int *accepts_p;
     if(accepts == NULL) {
         if((accepts = calloc(MAXACCEPT, 1)) == NULL) {
             //TODO Error
+            RETURN_ON_ERROR_WITH_VALUE(NULL);
         }
         accepts_p = accepts;
     }
@@ -195,12 +222,15 @@ PRIVATE char *save_accept(char *action) {
 }
 
 PRIVATE struct nfa *machine() {
+    RETURN_ON_ERROR_WITH_VALUE(NULL);
     ENTER("machine");
     // start state
     struct nfa *start, *p;
     p = start = new_nfa();
+    RETURN_ON_ERROR_WITH_VALUE(NULL);
     p->next = rule();
     while(!match(EOI)) {
+        RETURN_ON_ERROR_WITH_VALUE(NULL);
         p->next2 = new_nfa();
         p = p->next2;
         p->next = rule();
@@ -210,6 +240,7 @@ PRIVATE struct nfa *machine() {
 }
 
 PRIVATE struct nfa *rule() {
+    RETURN_ON_ERROR_WITH_VALUE(NULL);
     ENTER("rule");
     struct nfa *start, *end;
     int anchor = 0;
@@ -217,38 +248,45 @@ PRIVATE struct nfa *rule() {
         advance();
         start = new_nfa();
         anchor |= START;
+        RETURN_ON_ERROR_WITH_VALUE(NULL);
         expr(&start->next, &end);
     } else {
         expr(&start, &end);
     }
     if(match(EOL)) {
+        RETURN_ON_ERROR_WITH_VALUE(NULL);
         end->next = new_nfa();
+        RETURN_ON_ERROR_WITH_VALUE(NULL);
         end = end->next;
         advance();
         anchor |= END;
     }
     while(isspace(*expression)) expression++;
     end->accept = save_accept(expression);
+    RETURN_ON_ERROR_WITH_VALUE(NULL);
     end->anchor = anchor;
     advance();
     D(printf("Accept action: %s\n", end->accept);)
     LEAVE("rule");
-
     return start;
 }
 
 PRIVATE void expr(struct nfa **startp, struct nfa **endp) {
+    RETURN_ON_ERROR_VOID();
     ENTER("expr");
     concat(startp, endp);
     struct nfa *startp2, *endp2;
     while(match(OR)) {
         advance();
         concat(&startp2, &endp2);
+        RETURN_ON_ERROR_VOID();
         struct nfa *binder = new_nfa();
+        RETURN_ON_ERROR_VOID();
         binder->next = *startp;
         binder->next2 = startp2;
         *startp = binder;
         binder = new_nfa();
+        RETURN_ON_ERROR_VOID();
         (*endp)->next = binder;
         endp2->next = binder;
         *endp = binder;
@@ -257,21 +295,28 @@ PRIVATE void expr(struct nfa **startp, struct nfa **endp) {
 }
 
 PRIVATE void concat(struct nfa **startp, struct nfa **endp) {
+    RETURN_ON_ERROR_VOID();
     ENTER("concat");
     if(can_concat()) {
+        RETURN_ON_ERROR_VOID();
         factor(startp, endp);
+        RETURN_ON_ERROR_VOID();
     }
     while(can_concat()) {
+        RETURN_ON_ERROR_VOID();
         struct nfa *startp2, *endp2;
         factor(&startp2, &endp2);
+        RETURN_ON_ERROR_VOID();
         memcpy(*endp, startp2, sizeof(struct nfa));
         (*endp) = endp2;
         free_nfa(startp2);
+        RETURN_ON_ERROR_VOID();
     }
     LEAVE("concat");
 }
 
 PRIVATE int can_concat() {
+    RETURN_ON_ERROR_WITH_VALUE(0);
     switch(current_token) {
         case OR:
         case EOS:
@@ -280,18 +325,21 @@ PRIVATE int can_concat() {
         case EOI: return 0;
         case PLUS:
         case CLOSURE:
-        case OPTIONAL:  return 0; //TODO Error
-        case BOL: return 0; // TODO Error
-        case RCCL: return 0; //TODO Error
+        case OPTIONAL: ERROR(N_BADCLOSURE); return 0; //TODO Error
+        case BOL: ERROR(N_BADBOL); return 0; // TODO Error
+        case RCCL: ERROR(N_NOCCL); return 0; //TODO Error
         default: return 1;
     }
 }
 
 PRIVATE void factor(struct nfa **startp, struct nfa **endp) {
+    RETURN_ON_ERROR_VOID();
     ENTER("factor");
     term(startp, endp);
+    RETURN_ON_ERROR_VOID();
     if(match(CLOSURE) | match(PLUS) | match(OPTIONAL)) {
         struct nfa *newstart = new_nfa(), *newend = new_nfa();
+        RETURN_ON_ERROR_VOID();
         newstart->next = *startp;
         (*endp)->next = newend;
         if(match(CLOSURE) | match(PLUS)) {
@@ -303,6 +351,7 @@ PRIVATE void factor(struct nfa **startp, struct nfa **endp) {
         *startp = newstart;
         *endp = newend;
         advance();
+        RETURN_ON_ERROR_VOID();
     }
     LEAVE("factor");
 }
@@ -312,14 +361,19 @@ PRIVATE void term(struct nfa **startp, struct nfa **endp) {
     if(match(LPAREN)) {
         advance();
         expr(startp, endp);
+        RETURN_ON_ERROR_VOID();
         if(!match(RPAREN)) {
             //TODO Error
+            ERROR(N_MISSNGPAREN);
+            RETURN_ON_ERROR_VOID();
         }
         advance();
         return;
     }
     *startp = new_nfa();
+    RETURN_ON_ERROR_VOID();
     *endp = (*startp)->next = new_nfa();
+    RETURN_ON_ERROR_VOID();
     if(!match(ANY) & !match(LCCL)) {
         (*startp)->edge = lexeme;
     } else {
@@ -331,8 +385,10 @@ PRIVATE void term(struct nfa **startp, struct nfa **endp) {
             setcomplement((*startp)->ccl);
         } else {
             advance();
+            RETURN_ON_ERROR_VOID();
             if(match(BOL)) {
                 advance();
+                RETURN_ON_ERROR_VOID();
                 setcomplement((*startp)->ccl);
                 //[^]
                 if(match(RCCL)) {
@@ -358,6 +414,8 @@ PRIVATE void term(struct nfa **startp, struct nfa **endp) {
                     fill_ccl((*startp)->ccl);
                     if(!match(RCCL)) {
                         //TODO Error
+                        ERROR(N_OPENCCL);
+                        RETURN_ON_ERROR_VOID();
                     }
             }
         }
@@ -372,18 +430,20 @@ PRIVATE void fill_ccl(struct set *ccl) {
     while(!match(RCCL) && !match(EOS)) {
         if(match(DASH)) {
             advance();
+            RETURN_ON_ERROR_VOID();
             for(; first <= lexeme; first++) setadd(ccl, first);
         } else {
             first = lexeme;
             setadd(ccl, first);
         }
         advance();
+        RETURN_ON_ERROR_VOID();
     }
 }
 
 PRIVATE void printf_nfa(struct nfa *start) {
     printf("/*--------------------------------------------------*/\n");
-    printf("NFA: start state is #%d\n", (int)(start-nfas));
+    if(!next_alloc) printf("NO NFA\n");
     for(int i = 0; i < next_alloc; i++) {
         printf("STATE %d", i);
         if(nfas[i].next) {
@@ -421,14 +481,19 @@ PRIVATE void print_ccl(struct set *s) {
     printf("]");
 }
 
-int thompson_construction(struct nfa **nfa, struct nfa **start, char *(*inputfun)()) {
+int thompson_construction(struct nfa **nfa, struct nfa **start, int *size, char *(*inputfun)()) {
     input_fun = inputfun;
     current_token = EOS;
     advance();
     *start = machine();
+    *size = next_alloc;
     *nfa = nfas;
     D(printf_nfa(*start);)
-    return next_alloc;
+    if(last_error){
+        if(nfas) free(nfas);
+        if(accepts) free(accepts);
+    }
+    RETURN_ON_ERROR_WITH_VALUE(last_error)
+    return last_error;
 }
-
 

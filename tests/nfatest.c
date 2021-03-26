@@ -7,11 +7,15 @@
 extern int pre_expr();
 extern char *get_expr();
 
-int main() {
-    Ifile = fopen("/Users/jumbuna/Developer/lakes/tests/demo.lex", "r");
+int main(int argc, char **argv) {
+    Ifile = fopen(argv[1], "r");
     Ofile = stdout;
     pre_expr();
     struct nfa *start, *arr;
-    int size = thompson_construction(&arr, &start, get_expr);
-
+    int size;
+    int ret = thompson_construction(&arr, &start, &size, get_expr);
+    if(ret != N_OK) {
+        printf("An error occured: code %d\n", ret);
+    }
+    return ret;
 }
