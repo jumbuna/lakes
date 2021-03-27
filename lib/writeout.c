@@ -81,11 +81,11 @@ int print_header(ROW *dfa, int *accepts, int n) {
 				if(dfa[i][j] == laststate) {
 					fprintf(Ofile, "%c", j);
 					if(++p > 56) {
-						fprintf(Ofile, "\n * %*s", 10, "");
+						fprintf(Ofile, "\n *\t %*s", 10, "");
 						p = 0;
 					}	
 				} else {
-					fprintf(Ofile, "\n * goto %d on %c", dfa[i][j], j);
+					fprintf(Ofile, "\n *\tgoto %d on %c", dfa[i][j], j);
 					laststate = dfa[i][j];
 					p = 0;
 				}

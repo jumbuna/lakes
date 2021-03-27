@@ -12,11 +12,11 @@ void print_states(struct set *s) {
     }
     setnextmember(NULL);
     int i = setnextmember(s);
-    putchar('{');
+    printf("{");
     while(i != -1) {
-        putchar('0'+i);
+        printf("%d", i);
         i = setnextmember(s);
-        if(i != -1) putchar(',');
+        if(i != -1) printf(",");
     }
     putchar('}');
     fflush(stdout);

@@ -46,3 +46,5 @@ enum nerror {
 extern char *nerror2str[];
 
 void print_nerror();
+
+int get_nerror();

@@ -22,8 +22,6 @@ extern int esc();
 
 PRIVATE int last_error;
 
-#define ERROR(x) (last_error = x)
-
 #define NORETURN -2
 
 #define RETURN_ON_ERROR_WITH_VALUE(...)   \
@@ -527,10 +525,10 @@ char *nerror2str[] = {
 
 void print_nerror() {
     if(last_error == N_OK) return;
-    char *temp;
+    char *temp = NULL;
     char *to_use = pre_macro ? pre_macro : expression;
     fprintf(stderr, "%s%s:%d:%d: error: %s\n", Ifilename[0] == '/' ? "" : (temp = getcwd(0,0)), Ifilename, Lineno, (int) (to_use-start_expression), nerror2str[last_error]);
-    free(temp);
+    if(temp) free(temp);
     fprintf(stderr, "%s\n", start_expression);
     temp = start_expression;
     while(temp < to_use) {
@@ -560,4 +558,8 @@ void print_nerror() {
         }
     }
     fflush(stderr);
+}
+
+int get_nerror() {
+    return last_error;
 }
